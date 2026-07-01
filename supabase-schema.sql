@@ -16,6 +16,7 @@ create table if not exists public.timeline_days (
   memory_date date not null unique,
   title text not null default '',
   cover_image_url text,
+  cover_preview_data_url text,
   summary text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -23,6 +24,8 @@ create table if not exists public.timeline_days (
 
 alter table public.timeline_days
 add column if not exists title text not null default '';
+alter table public.timeline_days
+add column if not exists cover_preview_data_url text;
 
 create table if not exists public.memories (
   id uuid primary key default gen_random_uuid(),
@@ -40,6 +43,7 @@ create table if not exists public.memory_images (
   id uuid primary key default gen_random_uuid(),
   memory_id uuid not null references public.memories(id) on delete cascade,
   image_url text not null,
+  preview_data_url text,
   storage_path text,
   sort_order integer not null default 0,
   created_at timestamptz not null default now()
@@ -72,6 +76,7 @@ create table if not exists public.decorations (
   position_x double precision not null,
   position_y double precision not null,
   image_url text not null,
+  preview_data_url text,
   storage_path text,
   created_at timestamptz not null default now()
 );
@@ -103,12 +108,27 @@ create table if not exists public.site_settings (
 alter table public.site_settings
 add column if not exists default_decorations jsonb not null default '{}'::jsonb;
 
+alter table public.memory_images
+add column if not exists preview_data_url text;
+alter table public.decorations
+add column if not exists preview_data_url text;
+
+alter table public.profiles
+add column if not exists current_page text not null default 'home';
+alter table public.profiles
+add column if not exists position_x double precision not null default 14;
+alter table public.profiles
+add column if not exists position_y double precision not null default 72;
+alter table public.profiles
+add column if not exists last_seen timestamptz;
+
 create index if not exists memories_day_id_idx on public.memories(day_id);
 create index if not exists memory_images_memory_id_idx on public.memory_images(memory_id);
 create index if not exists comments_memory_id_idx on public.comments(memory_id);
 create index if not exists chat_messages_created_at_idx on public.chat_messages(created_at desc);
 create index if not exists decorations_created_at_idx on public.decorations(created_at);
 create index if not exists special_dates_event_date_idx on public.special_dates(event_date);
+create index if not exists profiles_last_seen_idx on public.profiles(last_seen);
 
 create or replace function public.set_updated_at()
 returns trigger
